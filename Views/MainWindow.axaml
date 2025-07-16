@@ -25,6 +25,7 @@
         <DataTemplate DataType="{x:Type avaloniaHexDocument:MemoryBinaryDocument}">
             <avaloniaHex:HexEditor
                 MaxHeight="400"
+                MinHeight="15"
                 Document="{Binding }"
                 FontFamily="Courier New">
                 <avaloniaHex:HexEditor.Columns>
@@ -59,7 +60,7 @@
                     <TabItem Header="UTF-8 Encoded text">
                         <DockPanel Margin="2">
                             <Button IsEnabled="{Binding IsConnected}" DockPanel.Dock="Bottom" Margin="25 5" HorizontalAlignment="Left" Content="Send" Command="{Binding SendFromTextFieldCommand}" CommandParameter="{Binding #message.Text}" />
-                            <TextBox x:Name="message" />
+                            <TextBox x:Name="message" AcceptsReturn="True" />
                         </DockPanel>
                     </TabItem>
                     <TabItem Header="From file">

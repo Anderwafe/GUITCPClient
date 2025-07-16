@@ -70,18 +70,18 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 if(_tcpClient.Connected && _tcpClient.Available == 0) {
                     await Task.Delay(250, ct);
-                    if(iterator != 8) {
-                        iterator++;
-                        continue;
-                    }
-                    iterator = 0;
-                    try{
-                        await _tcpClient.GetStream().WriteAsync(new byte[] {(byte)'.'}, ct);
-                    } catch(Exception e) {
-                        Logs.Add(e.Message);
-                        DisconnectFromServer();
-                        return Task.CompletedTask;
-                    }
+                    // if(iterator != 8) {
+                    //     iterator++;
+                    //     continue;
+                    // }
+                    // iterator = 0;
+                    // try{
+                    //     await _tcpClient.GetStream().WriteAsync(new byte[] {(byte)'.'}, ct);
+                    // } catch(Exception e) {
+                    //     Logs.Add(e.Message);
+                    //     DisconnectFromServer();
+                    //     return Task.CompletedTask;
+                    // }
                     continue;
                 }
 
@@ -127,7 +127,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task SendFromTextField(string text) {
         try{
-            byte[] buf = Encoding.UTF8.GetBytes(text + Environment.NewLine);
+            byte[] buf = Encoding.UTF8.GetBytes(text ?? "");
             await _tcpClient.GetStream().WriteAsync(buf, _tcpClientPollerTokenSource.Token);
         } catch(Exception e) {
             Logs.Add(e.Message + Environment.NewLine + e.InnerException.Message);
@@ -140,7 +140,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if(!File.Exists(SourceFilepath)) return;
         
         try{
-            await _tcpClient.Client.SendFileAsync(SourceFilepath, _tcpClientPollerTokenSource.Token);
+            await File.OpenRead(SourceFilepath).CopyToAsync(_tcpClient.GetStream());
         } catch(Exception e) {
             Logs.Add(e.Message);
             DisconnectFromServer();
