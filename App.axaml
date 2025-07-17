@@ -1,11 +1,13 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="GUITCPClient.App"
-             RequestedThemeVariant="Default">
+             RequestedThemeVariant="Default"
+             xmlns:dialogHostAvalonia="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
   
     <Application.Styles>
         <SimpleTheme />
         <StyleInclude Source="avares://AvaloniaHex/Themes/Simple/AvaloniaHex.axaml"/>
+        <dialogHostAvalonia:DialogHostStyles />
     </Application.Styles>
 </Application>

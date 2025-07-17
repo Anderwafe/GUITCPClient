@@ -7,6 +7,8 @@
         xmlns:avaloniaHex="clr-namespace:AvaloniaHex;assembly=AvaloniaHex"
         xmlns:avaloniaHexDocument="clr-namespace:AvaloniaHex.Document;assembly=AvaloniaHex"
         xmlns:rendering="clr-namespace:AvaloniaHex.Rendering;assembly=AvaloniaHex"
+        xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+        xmlns:dialogHostPositioners="clr-namespace:DialogHostAvalonia.Positioners;assembly=DialogHost.Avalonia"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="GUITCPClient.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -15,78 +17,98 @@
         MinWidth="800"
         MinHeight="600">
 
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
-    
-    <Window.DataTemplates>
-        <DataTemplate DataType="{x:Type avaloniaHexDocument:MemoryBinaryDocument}">
-            <avaloniaHex:HexEditor
-                MaxHeight="400"
-                MinHeight="15"
-                Document="{Binding }"
-                FontFamily="Courier New">
-                <avaloniaHex:HexEditor.Columns>
-                    <rendering:OffsetColumn />
-                    <rendering:HexColumn />
-                    <rendering:AsciiColumn InvalidCellChar="?" />
-                </avaloniaHex:HexEditor.Columns>
-            </avaloniaHex:HexEditor>
-        </DataTemplate>
-    </Window.DataTemplates>
+    <dialogHost:DialogHost x:Name="dialoghostcontrol" CloseOnClickAway="True">
+        <dialogHost:DialogHost.DataTemplates>
+            <DataTemplate DataType="{x:Type avaloniaHexDocument:MemoryBinaryDocument}">
+                <avaloniaHex:HexEditor
+                    MinHeight="500"
+                    MinWidth="700"
+                    Document="{Binding }"
+                    FontSize="14"
+                    FontFamily="Courier New">
+                    <avaloniaHex:HexEditor.Columns>
+                        <rendering:OffsetColumn />
+                        <rendering:HexColumn />
+                        <rendering:AsciiColumn />
+                    </avaloniaHex:HexEditor.Columns>
+                </avaloniaHex:HexEditor>
+            </DataTemplate>
+        </dialogHost:DialogHost.DataTemplates>
 
-    <Border Padding="5" Margin="5" BorderThickness="2" BorderBrush="Gray">
-        <DockPanel>
-            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="25">
-                <TextBlock Text="IP Address of server:" VerticalAlignment="Center" />
-                <TextBox VerticalAlignment="Center" MinWidth="200" Text="{Binding IpAddress}" />
-                <TextBlock Text="Port of the server:" VerticalAlignment="Center" />
-                <TextBox VerticalAlignment="Center" MinWidth="50" Text="{Binding Port}" />
-                <Button IsVisible="{Binding !IsConnected}" Content="Connect" Command="{Binding ConnectToServerCommand}" />
-                <Button IsVisible="{Binding IsConnected}" Content="Disconnect" Command="{Binding DisconnectFromServerCommand}" />
-            </StackPanel>
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition MinHeight="120" Height="*"/>
-                    <RowDefinition Height="5"/>
-                    <RowDefinition MinHeight="150" Height="*"/>
-                </Grid.RowDefinitions>
-                <GridSplitter Grid.Row="1" ResizeDirection="Rows"/>
-                
-                <!-- Upper half -->
-                <TabControl Grid.Row="0">
-                    <TabItem Header="UTF-8 Encoded text">
-                        <DockPanel Margin="2">
-                            <Button IsEnabled="{Binding IsConnected}" DockPanel.Dock="Bottom" Margin="25 5" HorizontalAlignment="Left" Content="Send" Command="{Binding SendFromTextFieldCommand}" CommandParameter="{Binding #message.Text}" />
-                            <TextBox x:Name="message" AcceptsReturn="True" />
-                        </DockPanel>
-                    </TabItem>
-                    <TabItem Header="From file">
-                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <TextBox Text="{Binding SourceFilepath}" />
-                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Spacing="10">
-                                <Button Content="Select file" Command="{Binding SelectFileCommand}" />
-                                <Button IsEnabled="{Binding CanSendFile}" Content="Send" Command="{Binding SendFileCommand}" />
+        <dialogHost:DialogHost.PopupPositioner>
+            <dialogHostPositioners:AlignmentDialogPopupPositioner HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="50" />
+        </dialogHost:DialogHost.PopupPositioner>
+
+        <Border Padding="5" Margin="5" BorderThickness="2" BorderBrush="Gray">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="25">
+                    <TextBlock Text="IP Address of server:" VerticalAlignment="Center" />
+                    <TextBox VerticalAlignment="Center" MinWidth="200" Text="{Binding IpAddress}" />
+                    <TextBlock Text="Port of the server:" VerticalAlignment="Center" />
+                    <TextBox VerticalAlignment="Center" MinWidth="50" Text="{Binding Port}" />
+                    <Button IsVisible="{Binding !IsConnected}" Content="Connect" Command="{Binding ConnectToServerCommand}" />
+                    <Button IsVisible="{Binding IsConnected}" Content="Disconnect" Command="{Binding DisconnectFromServerCommand}" />
+                </StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition MinHeight="120" Height="*"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition MinHeight="150" Height="*"/>
+                    </Grid.RowDefinitions>
+                    <GridSplitter Grid.Row="1" ResizeDirection="Rows"/>
+                    
+                    <!-- Upper half -->
+                    <TabControl Grid.Row="0">
+                        <TabItem Header="UTF-8 Encoded text">
+                            <DockPanel Margin="2">
+                                <Button IsEnabled="{Binding IsConnected}" DockPanel.Dock="Bottom" Margin="25 5" HorizontalAlignment="Left" Content="Send" Command="{Binding SendFromTextFieldCommand}" CommandParameter="{Binding #message.Text}" />
+                                <TextBox x:Name="message" AcceptsReturn="True" />
+                            </DockPanel>
+                        </TabItem>
+                        <TabItem Header="From file">
+                            <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBox Text="{Binding SourceFilepath}" />
+                                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Spacing="10">
+                                    <Button Content="Select file" Command="{Binding SelectFileCommand}" />
+                                    <Button IsEnabled="{Binding CanSendFile}" Content="Send" Command="{Binding SendFileCommand}" />
+                                </StackPanel>
                             </StackPanel>
-                        </StackPanel>
-                    </TabItem>
-                </TabControl>
+                        </TabItem>
+                    </TabControl>
 
-                <!-- Bottom half -->
-                <ScrollViewer Grid.Row="2">
-                    <ItemsControl ItemsSource="{Binding Logs}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderBrush="Black" BorderThickness="2">
-                                    <ContentControl MaxHeight="400" Content="{Binding }" Margin="0 10" />
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </Grid>
-        </DockPanel>
-    </Border>
+                    <!-- Bottom half -->
+                    <ScrollViewer Grid.Row="2">
+                        <ItemsControl ItemsSource="{Binding Logs}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="Black" BorderThickness="2">
+                                        <DockPanel>
+                                            <Button Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=dialogHost:DialogHost}, Path=OpenDialogCommand}" CommandParameter="{Binding }" Content="Full" DockPanel.Dock="Right"  />
+                                            <ContentControl MaxHeight="100" Content="{Binding }" Margin="0 10" >
+                                                <ContentControl.DataTemplates>
+                                                    <DataTemplate DataType="{x:Type avaloniaHexDocument:MemoryBinaryDocument}">
+                                                        <avaloniaHex:HexEditor
+                                                            MinHeight="15"
+                                                            MinWidth="700"
+                                                            Document="{Binding }"
+                                                            FontFamily="Courier New">
+                                                            <avaloniaHex:HexEditor.Columns>
+                                                                <rendering:OffsetColumn />
+                                                                <rendering:HexColumn />
+                                                                <rendering:AsciiColumn />
+                                                            </avaloniaHex:HexEditor.Columns>
+                                                        </avaloniaHex:HexEditor>
+                                                    </DataTemplate>
+                                                </ContentControl.DataTemplates>
+                                            </ContentControl>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </DockPanel>
+        </Border>
+    </dialogHost:DialogHost>
 </Window>

@@ -26,6 +26,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private ObservableCollection<object> _logs = new();
 
     [ObservableProperty]
+    private MemoryBinaryDocument _selectedDocument = null!;
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendFileCommand))]
     private string _sourceFilepath = "";
 
@@ -70,18 +73,18 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 if(_tcpClient.Connected && _tcpClient.Available == 0) {
                     await Task.Delay(250, ct);
-                    // if(iterator != 8) {
-                    //     iterator++;
-                    //     continue;
-                    // }
-                    // iterator = 0;
-                    // try{
-                    //     await _tcpClient.GetStream().WriteAsync(new byte[] {(byte)'.'}, ct);
-                    // } catch(Exception e) {
-                    //     Logs.Add(e.Message);
-                    //     DisconnectFromServer();
-                    //     return Task.CompletedTask;
-                    // }
+                    if(iterator != 4) {
+                        iterator++;
+                        continue;
+                    }
+                    iterator = 0;
+                    try{
+                        await _tcpClient.GetStream().WriteAsync(new byte[] {(byte)'.'}, ct);
+                    } catch(Exception e) {
+                        Logs.Add(e.Message);
+                        DisconnectFromServer();
+                        return Task.CompletedTask;
+                    }
                     continue;
                 }
 
