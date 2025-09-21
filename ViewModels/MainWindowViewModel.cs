@@ -64,7 +64,6 @@ public partial class MainWindowViewModel : ViewModelBase
         _tcpClientPoller = Task.Factory.StartNew(async () => {
             CancellationToken ct = _tcpClientPollerTokenSource.Token;
             
-            int iterator = 0;
             while(true) {
                 
                 if(ct.IsCancellationRequested) {
@@ -73,18 +72,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 if(_tcpClient.Connected && _tcpClient.Available == 0) {
                     await Task.Delay(250, ct);
-                    if(iterator != 4) {
-                        iterator++;
-                        continue;
-                    }
-                    iterator = 0;
-                    try{
-                        await _tcpClient.GetStream().WriteAsync(new byte[] {(byte)'.'}, ct);
-                    } catch(Exception e) {
-                        Logs.Add(e.Message);
-                        DisconnectFromServer();
-                        return Task.CompletedTask;
-                    }
                     continue;
                 }
 

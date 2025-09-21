@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Avalonia.Themes.Simple" Version="11.3.2" />
     <PackageReference Include="DialogHost.Avalonia" Version="0.9.3" />
     <Watch Include="**\*.xaml" />
 
