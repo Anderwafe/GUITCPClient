@@ -17,7 +17,7 @@ namespace GUITCPClient.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private TcpClient _tcpClient = new();
+    private Socket? _tcpClient;
 
     private Task _tcpClientPoller = null!;
     private CancellationTokenSource _tcpClientPollerTokenSource = null!;
@@ -47,6 +47,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanConnectToServer))]
     private void ConnectToServer() {
         try {
+            _tcpClient = new Socket(SocketType.Stream, ProtocolType.Tcp);
             _tcpClient.Connect(IPAddress.Parse(IpAddress), int.Parse(Port));
             IsConnected = _tcpClient.Connected;
         } catch(SocketException e) {
@@ -66,29 +67,59 @@ public partial class MainWindowViewModel : ViewModelBase
             
             while(true) {
                 
-                if(ct.IsCancellationRequested) {
-                    return Task.CompletedTask;
-                }
-
-                if(_tcpClient.Connected && _tcpClient.Available == 0) {
-                    await Task.Delay(250, ct);
-                    continue;
-                }
-
-                byte[] buf = new byte[_tcpClient.Available];
-                if(buf.Length == 0) continue;
-                try{
-                    await _tcpClient.GetStream().ReadAsync(buf, 0, buf.Length, ct);
-                    MemoryBinaryDocument mbd = new(buf, true);
-                    Logs.Add(mbd);
-                } catch(IOException e) {
-                    Logs.Add("Ошибка при получении данных. Проверьте соединение с сервером и повторите попытку: " + e.Message);
+                if(_tcpClient is null) break;
+                if(!_tcpClient.Connected) { 
+                    Logs.Add("Отключение от сервера");
                     Dispatcher.UIThread.Post(DisconnectFromServer);
-                    return Task.CompletedTask;
-                } catch(ObjectDisposedException e) {
+                    break;
+                }
+
+                if(ct.IsCancellationRequested) {
+                    return;
+                }
+
+                // if(_tcpClient.Connected && _tcpClient.Available == 0) {
+                //     await Task.Delay(250, ct);
+                //     continue;
+                // }
+
+                try {
+                    int prev;
+                    do {
+                        prev = _tcpClient.Available;
+                        await Task.Delay(250, ct);
+                    } while(prev != _tcpClient.Available);
+
+                    if(prev == 0) {
+                        if(_tcpClient.Poll(250*1000, SelectMode.SelectRead)) {
+                            prev = _tcpClient.Available;
+                            if(prev == 0) {
+                                Logs.Add("Connection closed by remote peer");
+                                Dispatcher.UIThread.Post(DisconnectFromServer);
+                                return;
+                            }
+                        }
+                    }
+
+                    byte[] buf = new byte[prev];
+                    try{
+                        await _tcpClient.ReceiveAsync(buf, ct);
+                        if(buf.Length == 0) continue;
+                        MemoryBinaryDocument mbd = new(buf, true);
+                        Logs.Add(mbd);
+                    } catch(IOException e) {
+                        Logs.Add("Ошибка при получении данных. Проверьте соединение с сервером и повторите попытку: " + e.Message);
+                        Dispatcher.UIThread.Post(DisconnectFromServer);
+                        return;
+                    } catch(ObjectDisposedException e) {
+                        Logs.Add("Соединение было разорвано. Проверьте соединение с сервером и повторите попытку: " + e.Message);
+                        Dispatcher.UIThread.Post(DisconnectFromServer);
+                        return;
+                    }
+                } catch(SocketException e) {
                     Logs.Add("Соединение было разорвано. Проверьте соединение с сервером и повторите попытку: " + e.Message);
                     Dispatcher.UIThread.Post(DisconnectFromServer);
-                    return Task.CompletedTask;
+                    return;
                 }
             }
         });
@@ -106,21 +137,27 @@ public partial class MainWindowViewModel : ViewModelBase
     private void DisconnectFromServer() {
         _tcpClientPollerTokenSource.Cancel();
 
-        _tcpClient.Close();
-        _tcpClient.Dispose();
+        if(_tcpClient is not null) {
+            _tcpClient.Shutdown(SocketShutdown.Both);
+            _tcpClient.Close();
+            _tcpClient.Dispose();
+        }
 
-        _tcpClient = new TcpClient();
         IsConnected = false;
-
     }
 
     [RelayCommand]
     private async Task SendFromTextField(string text) {
         try{
             byte[] buf = Encoding.UTF8.GetBytes(text ?? "");
-            await _tcpClient.GetStream().WriteAsync(buf, _tcpClientPollerTokenSource.Token);
+            if(_tcpClient is null) {
+                Dispatcher.UIThread.Post(DisconnectFromServer);
+                return;
+            }
+            
+            await _tcpClient.SendAsync(buf, _tcpClientPollerTokenSource.Token);
         } catch(Exception e) {
-            Logs.Add(e.Message + Environment.NewLine + e.InnerException.Message);
+            Logs.Add(e.Message + Environment.NewLine + e?.InnerException?.Message ?? "");
             DisconnectFromServer();
         }
     }
@@ -128,9 +165,14 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanSendFile))]
     private async Task SendFile() {
         if(!File.Exists(SourceFilepath)) return;
+        if(_tcpClient is null) {
+            Dispatcher.UIThread.Post(DisconnectFromServer);
+            return;
+        }
         
         try{
-            await File.OpenRead(SourceFilepath).CopyToAsync(_tcpClient.GetStream());
+            await _tcpClient.SendFileAsync(SourceFilepath);
+            // await File.OpenRead(SourceFilepath).CopyToAsync(_tcpClient.GetStream());
         } catch(Exception e) {
             Logs.Add(e.Message);
             DisconnectFromServer();
@@ -153,6 +195,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var buf = await SelectFileFromFilesystem(new FilePickerOpenOptions() { AllowMultiple = false });
         if(buf.Count == 0) { SourceFilepath = ""; return; }
-        SourceFilepath = buf[0].Path.AbsolutePath ?? "";
+        SourceFilepath = buf[0].TryGetLocalPath() ?? "";
     }
 }
